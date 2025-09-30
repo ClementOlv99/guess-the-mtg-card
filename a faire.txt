@@ -1,0 +1,4 @@
+Lien scryfall
+
+bouton set card (seed)
+
