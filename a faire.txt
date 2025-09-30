@@ -1,4 +1,11 @@
-Lien scryfall
+Lien scryfall (Validé)
 
-bouton set card (seed)
+bouton set card (seed) (Validé)
 
+pas de répetition de lettre (Validé)
+
+wrapping mieux
+
+reset link vers scryfall (Validé)
+
+hint mal reset (Validé)

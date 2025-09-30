@@ -1,1 +1,4 @@
 *.json
+*.class
+launch4j/
+dist-linux/
