@@ -56,39 +56,10 @@ exe-linux: jar-standalone
 	    --install-dir "/opt/mtg-card-guesser" \
 	    --linux-deb-maintainer "eldercraft@example.com"
 
-# Create Windows EXE using Launch4j (works on Linux)
-exe-launch4j: jar-standalone launch4j-config
-	@echo "Creating Windows EXE using Launch4j..."
-	./launch4j/launch4j launch4j-config.xml
+exe-windows: jar-standalone
+	jpackage --input . --name "MTG-Card-Guesser" --app-version "1.0" --main-jar guess-the-mtg-card-standalone.jar --main-class Main --type exe --dest dist-windows --win-shortcut --win-shortcut-prompt --win-menu --win-menu-group "Games" --win-per-user-install --description "Magic: The Gathering Card Guessing Game"
 
-# Create Launch4j config
-launch4j-config:
-	@echo '<?xml version="1.0" encoding="UTF-8"?>' > launch4j-config.xml
-	@echo '<launch4jConfig>' >> launch4j-config.xml
-	@echo '  <dontWrapJar>false</dontWrapJar>' >> launch4j-config.xml
-	@echo '  <headerType>gui</headerType>' >> launch4j-config.xml
-	@echo '  <jar>guess-the-mtg-card-standalone.jar</jar>' >> launch4j-config.xml
-	@echo '  <outfile>MTG-Card-Guesser.exe</outfile>' >> launch4j-config.xml
-	@echo '  <errTitle></errTitle>' >> launch4j-config.xml
-	@echo '  <cmdLine></cmdLine>' >> launch4j-config.xml
-	@echo '  <chdir>.</chdir>' >> launch4j-config.xml
-	@echo '  <priority>normal</priority>' >> launch4j-config.xml
-	@echo '  <downloadUrl>http://java.com/download</downloadUrl>' >> launch4j-config.xml
-	@echo '  <supportUrl></supportUrl>' >> launch4j-config.xml
-	@echo '  <stayAlive>false</stayAlive>' >> launch4j-config.xml
-	@echo '  <restartOnCrash>false</restartOnCrash>' >> launch4j-config.xml
-	@echo '  <manifest></manifest>' >> launch4j-config.xml
-	@echo '  <icon></icon>' >> launch4j-config.xml
-	@echo '  <jre>' >> launch4j-config.xml
-	@echo '    <path></path>' >> launch4j-config.xml
-	@echo '    <bundledJre64Bit>false</bundledJre64Bit>' >> launch4j-config.xml
-	@echo '    <bundledJreAsFallback>false</bundledJreAsFallback>' >> launch4j-config.xml
-	@echo '    <minVersion>1.8.0</minVersion>' >> launch4j-config.xml
-	@echo '    <maxVersion></maxVersion>' >> launch4j-config.xml
-	@echo '    <jdkPreference>preferJre</jdkPreference>' >> launch4j-config.xml
-	@echo '    <runtimeBits>64/32</runtimeBits>' >> launch4j-config.xml
-	@echo '  </jre>' >> launch4j-config.xml
-	@echo '</launch4jConfig>' >> launch4j-config.xml
+
 
 # Help target
 help:

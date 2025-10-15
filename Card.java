@@ -1,5 +1,9 @@
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.Random;
 
-
+import org.json.JSONObject;
 
 public class Card {
 
@@ -20,6 +24,85 @@ public class Card {
     private String cardurl;
 
     private int id;
+
+    public Card() {
+        Random r = new Random();
+        int lineNumber = 0;
+        try {
+            // Read from resource inside JAR instead of file system
+            java.io.InputStream inputStream = Main.class.getResourceAsStream("/cardlist.json");
+            if (inputStream == null) {
+                // Fallback to file system if not found in JAR (for development)
+                java.util.List<String> lines = Files.readAllLines(Paths.get("cardlist.json"));
+                lineNumber = r.nextInt(lines.size());
+                String randomLine = lines.get(lineNumber);
+                JSONObject currentCard = new JSONObject(randomLine);
+                System.out.println("Resource not found in JAR, please ensure cardlist.json is included.");          
+            } else {
+                // Read from JAR resource
+                java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.InputStreamReader(inputStream));
+                java.util.List<String> lines = reader.lines().collect(java.util.stream.Collectors.toList());
+                reader.close();
+                lineNumber = r.nextInt(lines.size());
+                String randomLine = lines.get(lineNumber);
+                JSONObject currentCard = new JSONObject(randomLine);
+
+                this.name = currentCard.getString("name");
+                this.manacost = currentCard.getString("mana_cost");
+                this.rarity = currentCard.getString("rarity");
+                this.ruletext = currentCard.getString("oracle_text");
+                this.type = currentCard.getString("type_line");
+                //this.cardurl = currentCard.getString("image_uris").toString();
+                this.id = lineNumber;
+
+                if (this.type.contains("Creature")) {
+                    this.power = currentCard.getString("power");
+                    this.toughness = currentCard.getString("toughness");
+                }
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    public Card(int lineNumber) {
+        try {
+            java.io.InputStream inputStream = Main.class.getResourceAsStream("/cardlist.json");
+            java.util.List<String> lines;
+            if (inputStream == null) {
+                lines = Files.readAllLines(Paths.get("cardlist.json"));
+            } else {
+                java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.InputStreamReader(inputStream));
+                lines = reader.lines().collect(java.util.stream.Collectors.toList());
+                reader.close();
+            }
+            if (lineNumber > 0 && lineNumber <= lines.size()) {
+
+                String line = lines.get(lineNumber);
+                JSONObject currentCard = new JSONObject(line);
+
+                this.name = currentCard.getString("name");
+                this.manacost = currentCard.getString("mana_cost");
+                this.rarity = currentCard.getString("rarity");
+                this.ruletext = currentCard.getString("oracle_text");
+                this.type = currentCard.getString("type_line");
+                //this.cardurl = currentCard.getString("image_uris").toString();
+                this.id = lineNumber;
+
+                
+            
+                if (this.type.contains("Creature")) {
+                    this.power = currentCard.getString("power");
+                    this.toughness = currentCard.getString("toughness");
+                }
+        }
+        
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
     public int getId() {
         return this.id;

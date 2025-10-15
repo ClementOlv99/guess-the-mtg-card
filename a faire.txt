@@ -4,8 +4,17 @@ bouton set card (seed) (Validé)
 
 pas de répetition de lettre (Validé)
 
-wrapping mieux
-
 reset link vers scryfall (Validé)
 
 hint mal reset (Validé)
+
+
+
+bouton see on scryfall sur linux
+
+wrapping mieux
+
+une case a cocher pour le hard mode
+
+peut etre rendre l'UI un tout petit plus joli
+
