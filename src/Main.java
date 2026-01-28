@@ -1,3 +1,4 @@
+package src;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -25,6 +26,7 @@ public class Main {
 
     static int hintsleft = 11;
     static boolean over = false;
+    static boolean won = false;
     static JLabel linkLabel;
     static ArrayList<Character> alreadyUsed = new ArrayList<>();
     static int score = 0;
@@ -262,13 +264,13 @@ public class Main {
                     newInfo.append(sb.toString());
                     
                     if (card.getType().contains("Creature")) {
-                        if (i == 0) newInfo.append("  "); // two spaces between name and manacost
-                        if (i == 1) newInfo.append("\n"); // newline after manacost
-                        if (i == 2) newInfo.append(" - "); // space dash space between type and power
-                        if (i == 3) newInfo.append("/"); // slash between power and toughness
-                        if (i == 4) newInfo.append("\n"); // newline after toughness
+                        if (i == 0) newInfo.append("  ");
+                        if (i == 1) newInfo.append("\n"); 
+                        if (i == 2) newInfo.append(" - "); //la il y a un if lol ça sert a quelque chose
+                        if (i == 3) newInfo.append("/"); 
+                        if (i == 4) newInfo.append("\n"); 
                     } else {
-                        if (i == 0) newInfo.append("  "); // two spaces between name and manacost
+                        if (i == 0) newInfo.append("  "); 
                         if (i == 1 || i == 2) newInfo.append("\n");
                     }
                 }
@@ -336,11 +338,17 @@ public class Main {
                 boolean correct = userAnswer.equalsIgnoreCase(cardName);
                 JOptionPane pane;
                 if (correct) {
-                pane = new JOptionPane("Correct!", JOptionPane.INFORMATION_MESSAGE);
-                score += score(score, hintsleft);
-                scoreLabel.setText("Score : " + score);
+                    pane = new JOptionPane("Correct!", JOptionPane.INFORMATION_MESSAGE);
+                    
+                    if (!over) {
+                        score += score(score, hintsleft);
+                        scoreLabel.setText("Score : " + score);
+                    }
+                    over = true;
+                    won = true;
                 } else {
-                pane = new JOptionPane("Wrong!", JOptionPane.ERROR_MESSAGE);
+                    pane = new JOptionPane("Wrong!", JOptionPane.ERROR_MESSAGE);
+                    over = true;
                 }
                 JDialog msgDialog = pane.createDialog(dialog, correct ? "Result" : "Result");
                 msgDialog.setModal(false);
@@ -428,6 +436,13 @@ public class Main {
             panel.revalidate();
             panel.repaint();
             alreadyUsed.clear();
+
+        
+            if (!won) {
+                score = 0;
+            }
+            scoreLabel.setText("Score : " + score);
+            won = false;
             over = false;
         });
 
@@ -466,12 +481,14 @@ public class Main {
                     linkLabel = createLinkLabel("See on Scryfall", card.getCardurl());
                     hintsleftlabel.setText("Hints left: " + hintsleft);
                     seedLabel.setText("Seed : " + card.getId());
-                    scoreLabel.setText("Score : " + 0);
+                    score = 0;
+                    scoreLabel.setText("Score : " + score);
 
                     panel.revalidate();
                     panel.repaint();
                     alreadyUsed.clear();
                     over = false;
+                    won = false;
                 } catch (NumberFormatException ex) {
                     JOptionPane.showMessageDialog(frame, "Please enter a valid integer for the Card ID.", "Error", JOptionPane.ERROR_MESSAGE);
                     alreadyUsed.clear();

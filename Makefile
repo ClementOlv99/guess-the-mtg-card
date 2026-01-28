@@ -2,15 +2,15 @@
 
 # Variables
 CLASSPATH = .:lib/json-20250517.jar
-SOURCES = Main.java Card.java
+SOURCES = src/Main.java src/Card.java
 MAIN_CLASS = Main
 
 # Default target
 all: compile
 
 # Compile the Java files
-compile:
-	javac -cp $(CLASSPATH) $(SOURCES)
+compile: | bin
+	javac -cp $(CLASSPATH) -d bin $(SOURCES)
 
 # Run the application
 run:
@@ -21,13 +21,13 @@ start: compile run
 
 # Create JAR file with embedded resources
 jar: compile manifest
-	jar cfm guess-the-mtg-card.jar manifest.txt *.class cardlist.json lib/json-20250517.jar
+	jar cfm guess-the-mtg-card.jar manifest.txt -C bin . cardlist.json lib/json-20250517.jar
 
 # Create standalone JAR with all dependencies embedded
 jar-standalone: compile manifest
 	mkdir -p temp
 	cd temp && jar xf ../lib/json-20250517.jar
-	jar cfm guess-the-mtg-card-standalone.jar manifest.txt *.class cardlist.json -C temp .
+	jar cfm guess-the-mtg-card-standalone.jar manifest.txt -C bin . cardlist.json -C temp .
 	rm -rf temp
 
 # Create manifest file
@@ -37,7 +37,7 @@ manifest:
 
 # Clean compiled files
 clean:
-	rm -f *.class guess-the-mtg-card.jar guess-the-mtg-card-standalone.jar manifest.txt launch4j-config.xml
+	rm -rf bin guess-the-mtg-card.jar guess-the-mtg-card-standalone.jar manifest.txt launch4j-config.xml
 	rm -rf temp MTG-Card-Guesser.exe
 
 
@@ -72,6 +72,10 @@ help:
 	@echo "  manifest - Create manifest file"
 	@echo "  clean   - Remove compiled .class files and JAR"
 	@echo "  help    - Show this help message"
+
+# Create bin directory if it doesn't exist
+bin:
+	mkdir -p bin
 
 # Declare phony targets
 .PHONY: all compile run start clean help jar-standalone exe-launch4j launch4j-config exe-linux

@@ -1,0 +1,2 @@
+Main-Class: Main
+Class-Path: lib/json-20250517.jar
