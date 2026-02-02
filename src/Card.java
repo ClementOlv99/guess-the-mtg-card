@@ -1,4 +1,3 @@
-package src;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -53,7 +52,7 @@ public class Card {
                 this.rarity = currentCard.getString("rarity");
                 this.ruletext = currentCard.getString("oracle_text");
                 this.type = currentCard.getString("type_line");
-                //this.cardurl = currentCard.getString("image_uris").toString();
+                this.cardurl = "https://scryfall.com/search?q=" + this.name.replace(" ", "+");
                 this.id = lineNumber;
 
                 if (this.type.contains("Creature")) {
@@ -89,7 +88,7 @@ public class Card {
                 this.rarity = currentCard.getString("rarity");
                 this.ruletext = currentCard.getString("oracle_text");
                 this.type = currentCard.getString("type_line");
-                //this.cardurl = currentCard.getString("image_uris").toString();
+                this.cardurl = "https://scryfall.com/search?q=" + this.name.replace(" ", "+");
                 this.id = lineNumber;
 
                 

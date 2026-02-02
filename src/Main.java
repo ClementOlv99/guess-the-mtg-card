@@ -1,4 +1,3 @@
-package src;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -51,6 +50,54 @@ public class Main {
         return currentScore + 100 + 10*hintsleft;
     }
 
+    public static void openBrowser(String url) {
+        if (url == null || url.isEmpty()) {
+            System.err.println("Error: URL is null or empty");
+            return;
+        }
+        try {
+            // First try the Desktop API (works on Windows and some Linux)
+            Desktop.getDesktop().browse(new URI(url));
+        } catch (Exception ex) {
+            // If Desktop API fails, try platform-specific commands
+            try {
+                String os = System.getProperty("os.name").toLowerCase();
+                
+                if (os.contains("win")) {
+                    // Windows
+                    Runtime.getRuntime().exec("cmd /c start " + url);
+                } else if (os.contains("mac")) {
+                    // macOS
+                    Runtime.getRuntime().exec(new String[]{"open", url});
+                } else {
+                    // Linux - try multiple commands in order
+                    String[] commands = {
+                        "xdg-open " + url,           // Standard freedesktop
+                        "gnome-open " + url,         // GNOME
+                        "kde-open " + url,           // KDE
+                        "firefox " + url,            // Firefox
+                        "chromium-browser " + url,   // Chromium
+                        "google-chrome " + url,      // Chrome
+                        "opera " + url               // Opera
+                    };
+                    
+                    boolean success = false;
+                    for (String cmd : commands) {
+                        try {
+                            Runtime.getRuntime().exec(cmd);
+                            success = true;
+                            break;
+                        } catch (Exception e2) {
+                            // Try next command
+                        }
+                    }
+                }
+            } catch (Exception e2) {
+                ex.printStackTrace();
+            }
+        }
+    }
+
     public static JLabel createLinkLabel(String text, String url) {
         linkLabel = new JLabel("<html><a href=''>" + text + "</a></html>");
         linkLabel.setFont(new Font("Arial", Font.PLAIN, 20));
@@ -58,12 +105,7 @@ public class Main {
         linkLabel.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mouseClicked(java.awt.event.MouseEvent e) {
-                try {
-                    System.out.println("hello");
-                    Desktop.getDesktop().browse(new URI(url));
-                } catch (Exception ex) {
-                    ex.printStackTrace();
-                }
+                openBrowser(url);
             }
         });
         return linkLabel;
