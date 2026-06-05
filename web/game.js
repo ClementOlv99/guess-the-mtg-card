@@ -72,11 +72,14 @@ let alreadyUsed = new Set();
 
 // ── Card data ─────────────────────────────────────────────────────────────────
 
+const CARD_DATA_URL = 'https://github.com/ClementOlv99/guess-the-mtg-card/releases/download/web_card_data/cardlist.json';
+
 async function getLines() {
   if (!allLines) {
-    const res  = await fetch('../cardlist.json');
+    const res = await fetch(CARD_DATA_URL);
+    if (!res.ok) throw new Error(`Failed to fetch card data: ${res.status}`);
     const text = await res.text();
-    allLines   = text.split('\n').filter(l => l.trim());
+    allLines = text.split('\n').filter(l => l.trim());
   }
   return allLines;
 }
@@ -341,12 +344,16 @@ showAnsBtn.addEventListener('click', () => {
 async function init() {
   canvas.width  = 500;
   canvas.height = 620;
-  // Load card data in parallel with images; start as soon as both are ready
-  const c = await loadRandom();
-  pendingCard = c;
-  cardReady   = true;
-  if (imagesReady === 2) {
-    startCard(c);
-    loadingOverlay.classList.add('hidden');
+  try {
+    const c = await loadRandom();
+    pendingCard = c;
+    cardReady   = true;
+    if (imagesReady === 2) {
+      startCard(c);
+      loadingOverlay.classList.add('hidden');
+    }
+  } catch (err) {
+    document.querySelector('#loadingBox p').textContent = 'Failed to load card data. ' + err.message;
+    console.error(err);
   }
 }
