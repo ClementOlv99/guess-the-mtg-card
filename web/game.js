@@ -56,9 +56,6 @@ ncImg.onload       = ncImg.onerror       = onImageSettled;
 creatureImg.src = '../assets/frame.png';
 ncImg.src       = '../assets/ncframe.jpg';
 
-// Start loading card data immediately — don't wait for images
-init();
-
 // ── State ─────────────────────────────────────────────────────────────────────
 
 let allLines   = null; // cached JSONL lines from cardlist.json
@@ -357,3 +354,5 @@ async function init() {
     console.error(err);
   }
 }
+
+init();
