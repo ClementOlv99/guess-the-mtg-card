@@ -273,12 +273,9 @@ function drawWrapped(text, x, y, maxW, botY, fontSize) {
 
 // ── Event listeners ───────────────────────────────────────────────────────────
 
-letterInput.addEventListener('keydown', e => {
-  const ch = e.key.toLowerCase();
-  if (/^[a-z0-9]$/.test(ch)) {
-    e.preventDefault();
-    revealLetter(ch);
-  }
+letterInput.addEventListener('input', e => {
+  const ch = (e.data ?? letterInput.value).slice(-1).toLowerCase();
+  if (/^[a-z0-9]$/.test(ch)) revealLetter(ch);
 });
 
 guessBtn.addEventListener('click', () => {
