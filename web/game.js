@@ -190,6 +190,19 @@ function updateUI() {
 
 // ── Canvas rendering ──────────────────────────────────────────────────────────
 
+// Insert thin space between characters so letter count is visible;
+// preserve real spaces and newlines as word/line break points.
+function withSpacing(chars) {
+  let out = '';
+  for (let i = 0; i < chars.length; i++) {
+    out += chars[i];
+    if (chars[i] !== ' ' && chars[i] !== '\n' && i < chars.length - 1) {
+      out += ' ';
+    }
+  }
+  return out;
+}
+
 function parsePx(fontStr) {
   const m = fontStr.match(/(\d+(?:\.\d+)?)px/);
   return m ? parseFloat(m[1]) : 12;
@@ -223,27 +236,27 @@ function drawCard() {
 
   // Name — left-aligned on name bar
   ctx.font = nameF;
-  ctx.fillText(revealed.name.join(''), tl, iy + ih * co.nameY);
+  ctx.fillText(withSpacing(revealed.name), tl, iy + ih * co.nameY);
 
   // Mana cost — right-aligned on name bar
   ctx.font = bodyF;
-  const mana = revealed.manacost.join('');
+  const mana = withSpacing(revealed.manacost);
   ctx.fillText(mana, tr - ctx.measureText(mana).width, iy + ih * co.nameY);
 
   // Type line
-  ctx.fillText(revealed.type.join(''), tl, iy + ih * co.typeY);
+  ctx.fillText(withSpacing(revealed.type), tl, iy + ih * co.typeY);
 
   // Oracle text (word-wrapped)
   ctx.font = oraF;
   drawWrapped(
-    revealed.ruletext.join(''),
+    withSpacing(revealed.ruletext),
     tl, iy + ih * co.oraY, tw, iy + ih * co.oraBotY, parsePx(oraF)
   );
 
   // Power / Toughness (creature only)
   if (card.isCreature) {
     ctx.font = nameF;
-    const pt   = revealed.power.join('') + '/' + revealed.toughness.join('');
+    const pt   = withSpacing(revealed.power) + '/' + withSpacing(revealed.toughness);
     const ptX  = ix + iw * C.creature.ptX - ctx.measureText(pt).width / 2;
     ctx.fillText(pt, ptX, iy + ih * C.creature.ptY);
   }
