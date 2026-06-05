@@ -36,11 +36,28 @@ const loadingOverlay  = document.getElementById('loadingOverlay');
 
 const creatureImg = new Image();
 const ncImg       = new Image();
-let imagesReady   = 0;
 
-creatureImg.onload = ncImg.onload = () => { if (++imagesReady === 2) init(); };
+// Track readiness of images and card data separately
+let imagesReady = 0;
+let cardReady   = false;
+let pendingCard = null;
+
+function onImageSettled() {
+  imagesReady++;
+  // If card data already loaded while images were fetching, start now
+  if (imagesReady === 2 && cardReady) {
+    startCard(pendingCard);
+    loadingOverlay.classList.add('hidden');
+  }
+}
+
+creatureImg.onload = creatureImg.onerror = onImageSettled;
+ncImg.onload       = ncImg.onerror       = onImageSettled;
 creatureImg.src = '../assets/frame.png';
 ncImg.src       = '../assets/ncframe.jpg';
+
+// Start loading card data immediately — don't wait for images
+init();
 
 // ── State ─────────────────────────────────────────────────────────────────────
 
@@ -324,7 +341,12 @@ showAnsBtn.addEventListener('click', () => {
 async function init() {
   canvas.width  = 500;
   canvas.height = 620;
+  // Load card data in parallel with images; start as soon as both are ready
   const c = await loadRandom();
-  startCard(c);
-  loadingOverlay.classList.add('hidden');
+  pendingCard = c;
+  cardReady   = true;
+  if (imagesReady === 2) {
+    startCard(c);
+    loadingOverlay.classList.add('hidden');
+  }
 }
