@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MTG Card Guesser</title>
+  <link rel="icon" href="../assets/favicon.ico">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div id="app">
+    <h1>MTG Card Guesser</h1>
+
+    <canvas id="cardCanvas"></canvas>
+
+    <div id="controls">
+      <div id="stats">
+        <span id="hints">Hints left: 11</span>
+        <span id="score">Score: 0</span>
+        <span id="seed">Seed: —</span>
+      </div>
+
+      <input
+        id="letterInput"
+        type="text"
+        maxlength="1"
+        autocomplete="off"
+        autocorrect="off"
+        spellcheck="false"
+        placeholder="Type a letter to reveal…"
+      >
+
+      <div id="buttons">
+        <button id="guessBtn">Guess Answer</button>
+        <button id="newCardBtn">New Random Card</button>
+        <button id="setSeedBtn">Set Card by Seed</button>
+        <button id="showAnsBtn">Show Answer</button>
+      </div>
+
+      <a id="scryfallLink" href="#" target="_blank" rel="noopener">See on Scryfall ↗</a>
+    </div>
+  </div>
+
+  <!-- Loading overlay -->
+  <div id="loadingOverlay">
+    <div id="loadingBox">
+      <div class="spinner"></div>
+      <p>Loading card data…</p>
+    </div>
+  </div>
+
+  <!-- Guess modal -->
+  <div id="guessModal" role="dialog" aria-modal="true" aria-label="Guess the card name">
+    <div id="guessBox">
+      <p>Enter the card name:</p>
+      <input id="guessInput" type="text" autocomplete="off" spellcheck="false" placeholder="Card name…">
+      <div id="modalButtons">
+        <button id="confirmGuess">Confirm</button>
+        <button id="closeModal">Cancel</button>
+      </div>
+      <p id="resultMsg"></p>
+    </div>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>

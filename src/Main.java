@@ -5,15 +5,15 @@ import java.util.Random;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
+import java.awt.image.BufferedImage;
 import javax.imageio.ImageIO;
-import javax.swing.*; 
-import java.awt.*; 
-import java.io.File; 
-import javax.imageio.ImageIO; 
+import javax.swing.*;
+import java.awt.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import java.awt.event.KeyEvent;
@@ -48,6 +48,16 @@ public class Main {
 
     public static int score(int currentScore, int hintsleft) {
         return currentScore + 100 + 10*hintsleft;
+    }
+
+    public static String withThinSpaces(String text) {
+        String thinSpace = " ";
+        StringBuilder sb = new StringBuilder();
+        for (char c : text.toCharArray()) {
+            sb.append(c);
+            sb.append(thinSpace);
+        }
+        return sb.toString();
     }
 
     public static void openBrowser(String url) {
@@ -137,7 +147,15 @@ public class Main {
         infoArea.setWrapStyleWord(true);
         infoArea.setEditable(false);
         infoArea.setOpaque(false);
-        panel.add(infoArea);
+        // infoArea is kept hidden — it is the text state store used by all reveal logic
+
+        CardPanel cardPanel = new CardPanel(infoArea, card.getType().contains("Creature"));
+        infoArea.getDocument().addDocumentListener(new DocumentListener() {
+            @Override public void insertUpdate(DocumentEvent e)  { cardPanel.repaint(); }
+            @Override public void removeUpdate(DocumentEvent e)  { cardPanel.repaint(); }
+            @Override public void changedUpdate(DocumentEvent e) { cardPanel.repaint(); }
+        });
+        panel.add(cardPanel);
 
         linkLabel = createLinkLabel("See on Scryfall", card.getCardurl());
 
@@ -319,17 +337,16 @@ public class Main {
                 infoArea.setText(newInfo.toString());
             }
             if (hintsleft < 0) {
-                String answerString;
+                hintsleft = 0;
                 if (card.getType().contains("Creature")) {
-                hintsleft = 0;
-                answerString = card.getName() + "  " + card.getManacost() + " " + "\n" + card.getType() + " - " + card.getPower() + "/" + card.getToughness() + "\n" + card.getRuletext();
+                    infoArea.setText(withThinSpaces(card.getName()) + "  " + withThinSpaces(card.getManacost()) + "\n" + withThinSpaces(card.getType()) + " - " + withThinSpaces(card.getPower()) + "/" + withThinSpaces(card.getToughness()) + "\n" + withThinSpaces(card.getRuletext()));
                 } else {
-                hintsleft = 0;
-                answerString = card.getName() + "  " + card.getManacost() + " " + "\n" + card.getType() + "\n" + card.getRuletext();
+                    infoArea.setText(withThinSpaces(card.getName()) + "  " + withThinSpaces(card.getManacost()) + "\n" + withThinSpaces(card.getType()) + "\n" + withThinSpaces(card.getRuletext()));
                 }
-                infoArea.setText(answerString.replace("", "\u2009").trim());
                 textField.setText("");
                 panel.add(linkLabel);
+                panel.revalidate();
+                panel.repaint();
             }
             }
 
@@ -400,18 +417,18 @@ public class Main {
                 new javax.swing.Timer(2000, evt -> {
                 msgDialog.dispose();
                 dialog.dispose();
-                    String answerString;
                     if (card.getType().contains("Creature")) {
-                    answerString = card.getName() + " - " + card.getManacost() + "\n" + card.getType() + " - " + card.getPower() + "/" + card.getToughness() + "\n" + card.getRuletext();
+                        infoArea.setText(withThinSpaces(card.getName()) + "  " + withThinSpaces(card.getManacost()) + "\n" + withThinSpaces(card.getType()) + " - " + withThinSpaces(card.getPower()) + "/" + withThinSpaces(card.getToughness()) + "\n" + withThinSpaces(card.getRuletext()));
                     } else {
-                    answerString = card.getName() + " - " + card.getManacost() + "\n" + card.getType() + "\n" + card.getRuletext();
+                        infoArea.setText(withThinSpaces(card.getName()) + "  " + withThinSpaces(card.getManacost()) + "\n" + withThinSpaces(card.getType()) + "\n" + withThinSpaces(card.getRuletext()));
                     }
-                    infoArea.setText(answerString.replace("", "\u2009").trim());
                     textField.setText("");
                     hintsleft = 0;
                     hintsleftlabel.setText("Hints left: 0");
                     panel.add(linkLabel);
-                
+                    panel.revalidate();
+                    panel.repaint();
+
                 }) {{ setRepeats(false); }}.start();
             });
             
@@ -464,6 +481,7 @@ public class Main {
             card.setToughness(newCard.getToughness());
             card.setCardurl(newCard.getCardurl());
             card.setId(newCard.getId());
+            cardPanel.setCreature(card.getType().contains("Creature"));
             if (card.getType().contains("Creature")) {
                 infoArea.setText(to8Dash(card.getName()) + "  " + to8Dash(card.getManacost()) + " " + "\n" + to8Dash(card.getType()) + " - " + to8Dash(card.getPower()) + "/" + to8Dash(card.getToughness()) + "\n" + to8Dash(card.getRuletext()));
             } else {
@@ -512,6 +530,7 @@ public class Main {
                     card.setToughness(newCard.getToughness());
                     card.setCardurl(newCard.getCardurl());
                     card.setId(newCard.getId());
+                    cardPanel.setCreature(card.getType().contains("Creature"));
                     if (card.getType().contains("Creature")) {
                         infoArea.setText(to8Dash(card.getName()) + "  " + to8Dash(card.getManacost()) + " " + "\n" + to8Dash(card.getType()) + " - " + to8Dash(card.getPower()) + "/" + to8Dash(card.getToughness()) + "\n" + to8Dash(card.getRuletext()));
                     } else {
@@ -549,17 +568,16 @@ public class Main {
         panel.add(showanswerButton);
         showanswerButton.addActionListener(e -> {
             over = true;
-            String answerString;
+            hintsleft = 0;
             if (card.getType().contains("Creature")) {
-                hintsleft = 0;
-                answerString = card.getName() + "  " + card.getManacost() + "\n" + card.getType() + " - " + card.getPower() + "/" + card.getToughness() + "\n" + card.getRuletext() ;
+                infoArea.setText(withThinSpaces(card.getName()) + "  " + withThinSpaces(card.getManacost()) + "\n" + withThinSpaces(card.getType()) + " - " + withThinSpaces(card.getPower()) + "/" + withThinSpaces(card.getToughness()) + "\n" + withThinSpaces(card.getRuletext()));
             } else {
-                hintsleft = 0;
-                answerString = card.getName() + "  " + card.getManacost() + "\n" + card.getType() + "\n" + card.getRuletext();
+                infoArea.setText(withThinSpaces(card.getName()) + "  " + withThinSpaces(card.getManacost()) + "\n" + withThinSpaces(card.getType()) + "\n" + withThinSpaces(card.getRuletext()));
             }
-            infoArea.setText(answerString.replace("", "\u2009").trim());
             textField.setText("");
             panel.add(linkLabel);
+            panel.revalidate();
+            panel.repaint();
         });
 
 
@@ -595,5 +613,195 @@ public class Main {
         
         
     }
-    
+
+    static class CardPanel extends JPanel {
+
+        // Proportional coords for creature frame (frame.png 570x797)
+        private static final double C_NAME_Y    = 0.085;
+        private static final double C_TYPE_Y    = 0.600;
+        private static final double C_ORA_Y     = 0.640;
+        private static final double C_ORA_BOT   = 0.942;
+        private static final double C_PT_X      = 0.875;
+        private static final double C_PT_Y      = 0.920;
+
+        // Proportional coords for non-creature frame (ncframe.jpg 736x1027)
+        private static final double NC_NAME_Y   = 0.085;
+        private static final double NC_TYPE_Y   = 0.595;
+        private static final double NC_ORA_Y    = 0.638;
+        private static final double NC_ORA_BOT  = 0.938;
+
+        // Horizontal margins are the same proportion in both frames
+        private static final double TEXT_LEFT   = 0.092;
+        private static final double TEXT_RIGHT  = 0.908;
+
+        private final JTextArea source;
+        private boolean creature;
+        private BufferedImage creatureImg;
+        private BufferedImage ncImg;
+
+        CardPanel(JTextArea source, boolean creature) {
+            this.source = source;
+            this.creature = creature;
+            setPreferredSize(new Dimension(500, 620));
+            setOpaque(false);
+            try {
+                InputStream cs = Main.class.getResourceAsStream("/assets/frame.png");
+                creatureImg = cs != null ? ImageIO.read(cs) : ImageIO.read(new File("assets/frame.png"));
+            } catch (Exception e) { e.printStackTrace(); }
+            try {
+                InputStream ns = Main.class.getResourceAsStream("/assets/ncframe.jpg");
+                ncImg = ns != null ? ImageIO.read(ns) : ImageIO.read(new File("assets/ncframe.jpg"));
+            } catch (Exception e) { e.printStackTrace(); }
+        }
+
+        void setCreature(boolean c) {
+            this.creature = c;
+            repaint();
+        }
+
+        @Override
+        protected void paintComponent(Graphics g0) {
+            super.paintComponent(g0);
+            Graphics2D g = (Graphics2D) g0;
+            g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,  RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+            g.setRenderingHint(RenderingHints.KEY_RENDERING,           RenderingHints.VALUE_RENDER_QUALITY);
+            g.setRenderingHint(RenderingHints.KEY_INTERPOLATION,       RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+
+            BufferedImage img = creature ? creatureImg : ncImg;
+            if (img == null) return;
+
+            int pw = getWidth(), ph = getHeight();
+            double aspect = (double) img.getWidth() / img.getHeight();
+            int iw, ih;
+            if ((double) pw / ph > aspect) {
+                ih = ph; iw = (int)(ph * aspect);
+            } else {
+                iw = pw; ih = (int)(pw / aspect);
+            }
+            int ix = (pw - iw) / 2;
+            int iy = (ph - ih) / 2;
+
+            g.drawImage(img, ix, iy, iw, ih, null);
+
+            String[] parts = parseText(source.getText());
+
+            double nameY  = creature ? C_NAME_Y  : NC_NAME_Y;
+            double typeY  = creature ? C_TYPE_Y  : NC_TYPE_Y;
+            double oraY   = creature ? C_ORA_Y   : NC_ORA_Y;
+            double oraBotY = creature ? C_ORA_BOT : NC_ORA_BOT;
+
+            int tl = ix + (int)(iw * TEXT_LEFT);
+            int tr = ix + (int)(iw * TEXT_RIGHT);
+            int tw = tr - tl;
+
+            int sz     = Math.max(10, iw / 30);
+            Font nameF = new Font("Arial", Font.BOLD,  sz);
+            Font bodyF = new Font("Arial", Font.PLAIN, Math.max(8, sz - 1));
+            Font oraF  = new Font("Arial", Font.PLAIN, Math.max(8, sz - 4));
+
+            g.setColor(Color.BLACK);
+
+            // Name — left-aligned on the name bar
+            if (parts.length > 0) {
+                g.setFont(nameF);
+                g.drawString(parts[0], tl, iy + (int)(ih * nameY));
+            }
+
+            // Mana cost — right-aligned on the name bar
+            if (parts.length > 1) {
+                g.setFont(bodyF);
+                FontMetrics fm = g.getFontMetrics();
+                String mana = parts[1];
+                g.drawString(mana, tr - fm.stringWidth(mana), iy + (int)(ih * nameY));
+            }
+
+            // Type line — left-aligned on the type bar
+            if (parts.length > 2) {
+                g.setFont(bodyF);
+                g.drawString(parts[2], tl, iy + (int)(ih * typeY));
+            }
+
+            // Oracle text — word-wrapped in the text box
+            int oraIdx = creature ? 5 : 3;
+            if (parts.length > oraIdx) {
+                g.setFont(oraF);
+                drawWrapped(g, parts[oraIdx], tl, iy + (int)(ih * oraY), tw, iy + (int)(ih * oraBotY));
+            }
+
+            // Power/Toughness — centred on the PT box (creature only)
+            if (creature && parts.length > 4) {
+                g.setFont(nameF);
+                String pt = parts[3] + "/" + parts[4];
+                FontMetrics fm = g.getFontMetrics();
+                int ptX = ix + (int)(iw * C_PT_X) - fm.stringWidth(pt) / 2;
+                int ptY = iy + (int)(ih * C_PT_Y);
+                g.drawString(pt, ptX, ptY);
+            }
+        }
+
+        private String[] parseText(String raw) {
+            // Strip thin spaces so separators are findable regardless of how setText was called
+            String text = raw.replace(" ", "");
+            if (creature) {
+                int ds   = text.indexOf("  ");
+                int nl1  = text.indexOf('\n');
+                int sds  = nl1 == -1 ? -1 : text.indexOf(" - ", nl1 + 1);
+                int nl2  = nl1 == -1 ? -1 : text.indexOf('\n', nl1 + 1);
+                if (ds != -1 && nl1 != -1 && sds != -1 && nl2 != -1) {
+                    String name  = addTS(text.substring(0, ds));
+                    String mana  = addTS(text.substring(ds + 2, nl1).trim());
+                    String type  = addTS(text.substring(nl1 + 1, sds));
+                    String ptSec = text.substring(sds + 3, nl2);
+                    int slash    = ptSec.indexOf('/');
+                    String pow   = slash != -1 ? addTS(ptSec.substring(0, slash))  : "";
+                    String tou   = slash != -1 ? addTS(ptSec.substring(slash + 1)) : "";
+                    String ora   = addTS(text.substring(nl2 + 1));
+                    return new String[]{name, mana, type, pow, tou, ora};
+                }
+            } else {
+                int ds  = text.indexOf("  ");
+                int nl1 = text.indexOf('\n');
+                int nl2 = nl1 == -1 ? -1 : text.indexOf('\n', nl1 + 1);
+                if (ds != -1 && nl1 != -1) {
+                    String name = addTS(text.substring(0, ds));
+                    String mana = addTS(text.substring(ds + 2, nl1).trim());
+                    String type = addTS(nl2 != -1 ? text.substring(nl1 + 1, nl2) : text.substring(nl1 + 1));
+                    String ora  = addTS(nl2 != -1 ? text.substring(nl2 + 1) : "");
+                    return new String[]{name, mana, type, ora};
+                }
+            }
+            return new String[]{raw};
+        }
+
+        private String addTS(String s) {
+            StringBuilder sb = new StringBuilder();
+            for (char c : s.toCharArray()) { sb.append(c); sb.append(' '); }
+            return sb.toString();
+        }
+
+        private void drawWrapped(Graphics2D g, String text, int x, int y, int maxW, int botY) {
+            FontMetrics fm = g.getFontMetrics();
+            int lh = fm.getHeight();
+            int cy = y + fm.getAscent();
+            for (String para : text.split("\n", -1)) {
+                if (cy > botY) break;
+                String[] words = para.split(" ", -1);
+                StringBuilder line = new StringBuilder();
+                for (String w : words) {
+                    String test = line.length() == 0 ? w : line + " " + w;
+                    if (fm.stringWidth(test) > maxW && line.length() > 0) {
+                        g.drawString(line.toString(), x, cy);
+                        cy += lh;
+                        if (cy > botY) return;
+                        line = new StringBuilder(w);
+                    } else {
+                        line = new StringBuilder(test);
+                    }
+                }
+                if (line.length() > 0) g.drawString(line.toString(), x, cy);
+                cy += lh;
+            }
+        }
+    }
+
 }

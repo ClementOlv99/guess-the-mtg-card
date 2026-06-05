@@ -21,13 +21,13 @@ start: compile run
 
 # Create JAR file with embedded resources
 jar: compile manifest
-	jar cfm guess-the-mtg-card.jar manifest.txt -C bin . cardlist.json lib/json-20250517.jar
+	jar cfm guess-the-mtg-card.jar manifest.txt -C bin . -C . cardlist.json lib/json-20250517.jar
 
 # Create standalone JAR with all dependencies embedded
 jar-standalone: compile manifest
 	mkdir -p temp
 	cd temp && jar xf ../lib/json-20250517.jar
-	jar cfm guess-the-mtg-card-standalone.jar manifest.txt -C bin . cardlist.json -C temp .
+	jar cfm guess-the-mtg-card-standalone.jar manifest.txt -C bin . -C . cardlist.json -C . assets -C temp .
 	rm -rf temp
 
 # Create manifest file
