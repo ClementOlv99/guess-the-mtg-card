@@ -69,11 +69,9 @@ let alreadyUsed = new Set();
 
 // ── Card data ─────────────────────────────────────────────────────────────────
 
-const CARD_DATA_URL = 'https://github.com/ClementOlv99/guess-the-mtg-card/releases/download/web_card_data/cardlist.json';
-
 async function getLines() {
   if (!allLines) {
-    const res = await fetch(CARD_DATA_URL);
+    const res = await fetch('../cardlist.json');
     if (!res.ok) throw new Error(`Failed to fetch card data: ${res.status}`);
     const text = await res.text();
     allLines = text.split('\n').filter(l => l.trim());
