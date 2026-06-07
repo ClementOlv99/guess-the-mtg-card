@@ -65,6 +65,7 @@ let hintsLeft  = HINTS_MAX;
 let score      = 0;
 let over       = false;
 let won        = false;
+let lastChance = false; // hints exhausted, waiting for final modal guess
 let alreadyUsed = new Set();
 
 // ── Card data ─────────────────────────────────────────────────────────────────
@@ -135,6 +136,7 @@ function startCard(c) {
     toughness: to8Dash(card.toughness),
     ruletext:  to8Dash(card.ruletext),
   };
+  lastChance                 = false;
   scryfallLink.style.display = 'none';
   scryfallLink.href          = card.url;
   letterInput.disabled       = false;
@@ -144,13 +146,13 @@ function startCard(c) {
   drawCard();
 }
 
-function endGame(correct) {
+function endGame(correct, revealCard = true) {
   if (over) return;
   over = true;
   won  = correct;
   if (correct) score += 100 + 10 * hintsLeft;
   hintsLeft = 0;
-  revealAll();
+  if (revealCard) revealAll();
   letterInput.disabled       = true;
   scryfallLink.style.display = 'inline';
   updateUI();
@@ -175,7 +177,11 @@ function revealLetter(ch) {
   }
 
   if (hintsLeft === 0) {
-    endGame(false);
+    lastChance = true;
+    letterInput.disabled = true;
+    updateUI();
+    drawCard();
+    openGuessModal();
   } else {
     updateUI();
     drawCard();
@@ -190,13 +196,14 @@ function updateUI() {
 
 // ── Canvas rendering ──────────────────────────────────────────────────────────
 
-// Insert thin space between characters so letter count is visible;
-// preserve real spaces and newlines as word/line break points.
+// Small space between letters; wider gap between words.
 function withSpacing(chars) {
   let out = '';
   for (let i = 0; i < chars.length; i++) {
     out += chars[i];
-    if (chars[i] !== ' ' && chars[i] !== '\n' && i < chars.length - 1) {
+    if (chars[i] === ' ' && i < chars.length - 1) {
+      out += '  '; // word gap: space + thin space, wider than letter gap
+    } else if (chars[i] !== '' && i < chars.length - 1) {
       out += ' ';
     }
   }
@@ -291,29 +298,42 @@ letterInput.addEventListener('input', e => {
   if (/^[a-z0-9]$/.test(ch)) revealLetter(ch);
 });
 
-guessBtn.addEventListener('click', () => {
-  if (over) return;
-  guessInput.value    = '';
+function openGuessModal() {
+  guessInput.value      = '';
   resultMsg.textContent = '';
   resultMsg.className   = '';
   guessModal.style.display = 'flex';
   guessInput.focus();
+}
+
+function closeGuessModal() {
+  guessModal.style.display = 'none';
+}
+
+guessBtn.addEventListener('click', () => {
+  if (over) return;
+  openGuessModal();
 });
 
 confirmBtn.addEventListener('click', submitGuess);
 guessInput.addEventListener('keydown', e => { if (e.key === 'Enter') submitGuess(); });
-closeModal.addEventListener('click',   () => { guessModal.style.display = 'none'; });
+closeModal.addEventListener('click', closeGuessModal);
 
 // Close modal on backdrop click
 guessModal.addEventListener('click', e => {
-  if (e.target === guessModal) guessModal.style.display = 'none';
+  if (e.target === guessModal) closeGuessModal();
 });
 
 function submitGuess() {
   const answer = guessInput.value.trim();
   if (!answer) return;
   const correct = answer.toLowerCase() === card.name.toLowerCase();
-  endGame(correct);
+  if (lastChance) {
+    lastChance = false;
+    endGame(correct, correct); // reveal only if correct
+  } else {
+    endGame(correct);
+  }
   resultMsg.textContent = correct ? '✓ Correct!' : '✗ Wrong!';
   resultMsg.className   = correct ? 'correct' : 'wrong';
   setTimeout(() => { guessModal.style.display = 'none'; }, 1500);
