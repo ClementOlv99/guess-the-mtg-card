@@ -1,5 +1,15 @@
 'use strict';
 
+
+const SUPABASE_URL = 'https://fgmmhvyrurqttmpwuvek.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_ecBi5x7fj7YZdFe9N4Sgwg_K_KTnAFo';
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const PLAYER_KEY = 'mtg-player-name';
+let playerName = localStorage.getItem(PLAYER_KEY) || '';
+let leaderboard = [];
+let runSaved = false;
+
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const HINTS_MAX = 11;
@@ -31,6 +41,95 @@ const confirmBtn      = document.getElementById('confirmGuess');
 const closeModal      = document.getElementById('closeModal');
 const resultMsg       = document.getElementById('resultMsg');
 const loadingOverlay  = document.getElementById('loadingOverlay');
+
+const leaderboardList = document.getElementById('leaderboardList');
+const playerNameInput = document.getElementById('playerNameInput');
+const savePlayerBtn = document.getElementById('savePlayerBtn');
+const playerStatus = document.getElementById('playerStatus');
+
+function updatePlayerStatus() {
+  playerStatus.textContent = playerName
+    ? `Playing as ${playerName}`
+    : 'Set a name to appear on the leaderboard.';
+}
+
+async function savePlayerName() {
+  const value = playerNameInput.value.trim();
+  if (!value) return;
+
+  playerName = value;
+  localStorage.setItem(PLAYER_KEY, playerName);
+  updatePlayerStatus();
+  await loadLeaderboard();
+}
+
+async function saveScoreToSupabase(scoreValue) {
+  if (!playerName || scoreValue <= 0) return;
+
+  try {
+    const { error } = await supabase.from('scores').insert([
+      { username: playerName, score: scoreValue }
+    ]);
+
+    if (error) {
+      console.error('Supabase insert error:', error);
+      return;
+    }
+
+    await loadLeaderboard();
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+async function loadLeaderboard() {
+  try {
+    const { data, error } = await supabase
+      .from('scores')
+      .select('username, score')
+      .order('score', { ascending: false })
+      .limit(10);
+
+    if (error) {
+      console.error('Supabase select error:', error);
+      return;
+    }
+
+    renderLeaderboard(data || []);
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+function renderLeaderboard(rows) {
+  leaderboardList.innerHTML = '';
+
+  if (!rows.length) {
+    const li = document.createElement('li');
+    li.className = 'empty';
+    li.textContent = 'No scores yet';
+    leaderboardList.appendChild(li);
+    return;
+  }
+
+  rows.forEach((row, index) => {
+    const li = document.createElement('li');
+    const left = document.createElement('span');
+    left.textContent = `${index + 1}. ${row.username}`;
+    const right = document.createElement('span');
+    right.textContent = row.score;
+    li.appendChild(left);
+    li.appendChild(right);
+    leaderboardList.appendChild(li);
+  });
+}
+
+function finalizeRunIfNeeded() {
+  if (!runSaved && score > 0) {
+    runSaved = true;
+    void saveScoreToSupabase(score);
+  }
+}
 
 // ── Images ────────────────────────────────────────────────────────────────────
 
@@ -108,6 +207,85 @@ function parseCard(line, id) {
   };
 }
 
+// Leaderboard logic 
+
+function updatePlayerStatus() {
+  playerStatus.textContent = playerName
+    ? `Playing as ${playerName}`
+    : 'Set a name to appear on the leaderboard.';
+}
+
+async function savePlayerName() {
+  const value = playerNameInput.value.trim();
+  if (!value) return;
+
+  playerName = value;
+  localStorage.setItem(PLAYER_KEY, playerName);
+  updatePlayerStatus();
+  await loadLeaderboard();
+}
+
+async function saveScoreToSupabase(scoreValue) {
+  if (!playerName || scoreValue <= 0) return;
+
+  try {
+    const { error } = await supabase.from('scores').insert([
+      { username: playerName, score: scoreValue }
+    ]);
+
+    if (error) {
+      console.error('Supabase insert error:', error);
+      return;
+    }
+
+    await loadLeaderboard();
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+async function loadLeaderboard() {
+  try {
+    const { data, error } = await supabase
+      .from('scores')
+      .select('username, score')
+      .order('score', { ascending: false })
+      .limit(10);
+
+    if (error) {
+      console.error('Supabase select error:', error);
+      return;
+    }
+
+    renderLeaderboard(data || []);
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+function renderLeaderboard(rows) {
+  leaderboardList.innerHTML = '';
+
+  if (!rows.length) {
+    const li = document.createElement('li');
+    li.className = 'empty';
+    li.textContent = 'No scores yet';
+    leaderboardList.appendChild(li);
+    return;
+  }
+
+  rows.forEach((row, index) => {
+    const li = document.createElement('li');
+    const left = document.createElement('span');
+    left.textContent = `${index + 1}. ${row.username}`;
+    const right = document.createElement('span');
+    right.textContent = row.score;
+    li.appendChild(left);
+    li.appendChild(right);
+    leaderboardList.appendChild(li);
+  });
+}
+
 // ── Game logic ────────────────────────────────────────────────────────────────
 
 function to8Dash(text) {
@@ -128,6 +306,7 @@ function startCard(c) {
   hintsLeft   = HINTS_MAX;
   over        = false;
   alreadyUsed = new Set();
+  runSaved    = false;
   revealed = {
     name:      to8Dash(card.name),
     manacost:  to8Dash(card.manacost),
@@ -328,6 +507,11 @@ function submitGuess() {
   const answer = guessInput.value.trim();
   if (!answer) return;
   const correct = answer.toLowerCase() === card.name.toLowerCase();
+
+  if (!correct) {
+    finalizeRunIfNeeded();
+  }
+
   if (lastChance) {
     lastChance = false;
     endGame(correct, correct); // reveal only if correct
@@ -340,6 +524,9 @@ function submitGuess() {
 }
 
 newCardBtn.addEventListener('click', async () => {
+  if (!won && over && score > 0) {
+    finalizeRunIfNeeded();
+  }
   if (!won) score = 0;
   won = false;
   const c = await loadRandom();
@@ -360,6 +547,9 @@ setSeedBtn.addEventListener('click', async () => {
 });
 
 showAnsBtn.addEventListener('click', () => {
+  if (!over) {
+    finalizeRunIfNeeded();
+  }
   won = false;
   endGame(false);
 });
@@ -367,6 +557,16 @@ showAnsBtn.addEventListener('click', () => {
 // ── Init ──────────────────────────────────────────────────────────────────────
 
 async function init() {
+  playerNameInput.value = playerName;
+  updatePlayerStatus();
+
+  savePlayerBtn.addEventListener('click', savePlayerName);
+  playerNameInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') savePlayerName();
+  });
+
+  await loadLeaderboard();
+
   canvas.width  = 500;
   canvas.height = 620;
   try {

@@ -194,3 +194,96 @@ button:active { transform: scale(0.97); }
 #resultMsg { font-size: 1.1rem; font-weight: bold; text-align: center; min-height: 1.4em; }
 #resultMsg.correct { color: #4caf50; }
 #resultMsg.wrong   { color: #e53935; }
+
+body {
+  align-items: flex-start;
+  padding: 24px;
+}
+
+#app {
+  display: grid;
+  grid-template-columns: minmax(260px, 320px) 1fr;
+  gap: 24px;
+  width: 100%;
+  max-width: 1200px;
+  align-items: start;
+}
+
+#gamePanel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+#leaderboardPanel {
+  background: #16213e;
+  border-radius: 10px;
+  padding: 16px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+}
+
+#leaderboardPanel h2 {
+  margin-bottom: 12px;
+  color: #c8a951;
+  font-size: 1.2rem;
+}
+
+#playerSetup {
+  margin-bottom: 14px;
+}
+
+#playerSetup label {
+  display: block;
+  margin-bottom: 6px;
+  color: #ddd;
+  font-size: 0.95rem;
+}
+
+.playerRow {
+  display: flex;
+  gap: 8px;
+}
+
+#playerNameInput {
+  flex: 1;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid #444;
+  background: #0f1e3a;
+  color: #fff;
+}
+
+#savePlayerBtn {
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: #c8a951;
+  color: #111;
+  font-weight: bold;
+}
+
+#playerStatus {
+  margin-top: 8px;
+  color: #9cc;
+  font-size: 0.9rem;
+}
+
+#leaderboardList {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+#leaderboardList li {
+  display: flex;
+  justify-content: space-between;
+  background: #0f1e3a;
+  padding: 8px 10px;
+  border-radius: 6px;
+}
+
+#leaderboardList .empty {
+  justify-content: center;
+  color: #aaa;
+}

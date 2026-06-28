@@ -62,6 +62,58 @@
     </div>
   </div>
 
+
+
+  <div id="app">
+    <aside id="leaderboardPanel">
+      <h2>Top 10 scores</h2>
+    
+      <div id="playerSetup">
+        <label for="playerNameInput">Your name</label>
+        <div class="playerRow">
+          <input id="playerNameInput" maxlength="24" placeholder="Enter your name">
+          <button id="savePlayerBtn">Save</button>
+        </div>
+        <p id="playerStatus">Set a name to appear on the leaderboard.</p>
+      </div>
+    
+      <ol id="leaderboardList"></ol>
+    </aside>
+  
+    <div id="gamePanel">
+      <h1>MTG Card Guesser</h1>
+    
+      <canvas id="cardCanvas"></canvas>
+    
+      <div id="controls">
+        <div id="stats">
+          <span id="hints">Hints left: 11</span>
+          <span id="score">Score: 0</span>
+          <span id="seed">Seed: —</span>
+        </div>
+      
+        <input
+          id="letterInput"
+          type="text"
+          autocomplete="off"
+          autocorrect="off"
+          spellcheck="false"
+          placeholder="Type a letter to reveal…"
+        >
+      
+        <div id="buttons">
+          <button id="guessBtn">Guess Answer</button>
+          <button id="newCardBtn">New Random Card</button>
+          <button id="setSeedBtn">Set Card by Seed</button>
+          <button id="showAnsBtn">Show Answer</button>
+        </div>
+      
+        <a id="scryfallLink" href="#" target="_blank" rel="noopener">See on Scryfall ↗</a>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="game.js"></script>
 </body>
 </html>
