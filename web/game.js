@@ -1,9 +1,10 @@
 'use strict';
 
+window.__gameJsLoaded = true;
 
 const SUPABASE_URL = 'https://fgmmhvyrurqttmpwuvek.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_ecBi5x7fj7YZdFe9N4Sgwg_K_KTnAFo';
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const PLAYER_KEY = 'mtg-player-name';
 let playerName = localStorage.getItem(PLAYER_KEY) || '';
@@ -14,7 +15,6 @@ let runSaved = false;
 
 const HINTS_MAX = 11;
 
-// Proportional text coordinates, mirrored from CardPanel.java
 const C = {
   creature:    { nameY: 0.085, typeY: 0.600, oraY: 0.640, oraBotY: 0.942, ptX: 0.875, ptY: 0.920 },
   nonCreature: { nameY: 0.085, typeY: 0.595, oraY: 0.638, oraBotY: 0.938 },
@@ -67,7 +67,7 @@ async function saveScoreToSupabase(scoreValue) {
   if (!playerName || scoreValue <= 0) return;
 
   try {
-    const { error } = await supabase.from('scores').insert([
+    const { error } = await supabaseClient.from('scores').insert([
       { username: playerName, score: scoreValue }
     ]);
 
@@ -84,7 +84,7 @@ async function saveScoreToSupabase(scoreValue) {
 
 async function loadLeaderboard() {
   try {
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
       .from('scores')
       .select('username, score')
       .order('score', { ascending: false })
@@ -136,18 +136,21 @@ function finalizeRunIfNeeded() {
 const creatureImg = new Image();
 const ncImg       = new Image();
 
-// Track readiness of images and card data separately
 let imagesReady = 0;
 let cardReady   = false;
 let pendingCard = null;
 
-function onImageSettled() {
-  imagesReady++;
-  // If card data already loaded while images were fetching, start now
+function maybeStartCard() {
   if (imagesReady === 2 && cardReady) {
     startCard(pendingCard);
     loadingOverlay.classList.add('hidden');
   }
+}
+
+function onImageSettled() {
+  imagesReady++;
+  console.log('game: image settled', imagesReady, cardReady);
+  maybeStartCard();
 }
 
 creatureImg.onload = creatureImg.onerror = onImageSettled;
@@ -157,14 +160,14 @@ ncImg.src       = '../assets/ncframe.jpg';
 
 // ── State ─────────────────────────────────────────────────────────────────────
 
-let allLines   = null; // cached JSONL lines from cardlist.json
+let allLines   = null;
 let card       = null;
-let revealed   = {};   // { name, manacost, type, power, toughness, ruletext } — char arrays
+let revealed   = {};
 let hintsLeft  = HINTS_MAX;
 let score      = 0;
 let over       = false;
 let won        = false;
-let lastChance = false; // hints exhausted, waiting for final modal guess
+let lastChance = false;
 let alreadyUsed = new Set();
 
 // ── Card data ─────────────────────────────────────────────────────────────────
@@ -193,103 +196,30 @@ async function loadById(id) {
 
 function parseCard(line, id) {
   const j = JSON.parse(line);
+  const name = j.name ?? '';
+  const manacost = j.mana_cost ?? '';
+  const type = j.type_line ?? '';
+  const ruletext = j.oracle_text ?? '';
+
   return {
     id,
-    name:       j.name,
-    manacost:   j.mana_cost,
-    type:       j.type_line,
-    ruletext:   j.oracle_text,
+    name,
+    manacost,
+    type,
+    ruletext,
     power:      j.power      ?? '',
     toughness:  j.toughness  ?? '',
-    rarity:     j.rarity,
-    url:        'https://scryfall.com/search?q=' + encodeURIComponent(j.name),
-    isCreature: j.type_line.includes('Creature'),
+    rarity:     j.rarity     ?? '',
+    url:        'https://scryfall.com/search?q=' + encodeURIComponent(name),
+    isCreature: type.includes('Creature'),
   };
-}
-
-// Leaderboard logic 
-
-function updatePlayerStatus() {
-  playerStatus.textContent = playerName
-    ? `Playing as ${playerName}`
-    : 'Set a name to appear on the leaderboard.';
-}
-
-async function savePlayerName() {
-  const value = playerNameInput.value.trim();
-  if (!value) return;
-
-  playerName = value;
-  localStorage.setItem(PLAYER_KEY, playerName);
-  updatePlayerStatus();
-  await loadLeaderboard();
-}
-
-async function saveScoreToSupabase(scoreValue) {
-  if (!playerName || scoreValue <= 0) return;
-
-  try {
-    const { error } = await supabase.from('scores').insert([
-      { username: playerName, score: scoreValue }
-    ]);
-
-    if (error) {
-      console.error('Supabase insert error:', error);
-      return;
-    }
-
-    await loadLeaderboard();
-  } catch (err) {
-    console.error(err);
-  }
-}
-
-async function loadLeaderboard() {
-  try {
-    const { data, error } = await supabase
-      .from('scores')
-      .select('username, score')
-      .order('score', { ascending: false })
-      .limit(10);
-
-    if (error) {
-      console.error('Supabase select error:', error);
-      return;
-    }
-
-    renderLeaderboard(data || []);
-  } catch (err) {
-    console.error(err);
-  }
-}
-
-function renderLeaderboard(rows) {
-  leaderboardList.innerHTML = '';
-
-  if (!rows.length) {
-    const li = document.createElement('li');
-    li.className = 'empty';
-    li.textContent = 'No scores yet';
-    leaderboardList.appendChild(li);
-    return;
-  }
-
-  rows.forEach((row, index) => {
-    const li = document.createElement('li');
-    const left = document.createElement('span');
-    left.textContent = `${index + 1}. ${row.username}`;
-    const right = document.createElement('span');
-    right.textContent = row.score;
-    li.appendChild(left);
-    li.appendChild(right);
-    leaderboardList.appendChild(li);
-  });
 }
 
 // ── Game logic ────────────────────────────────────────────────────────────────
 
 function to8Dash(text) {
-  return Array.from(text).map(c => /[a-zA-Z0-9]/.test(c) ? '_' : c);
+  const normalized = text ?? '';
+  return Array.from(normalized).map(c => /[a-zA-Z0-9]/.test(c) ? '_' : c);
 }
 
 function revealAll() {
@@ -307,6 +237,7 @@ function startCard(c) {
   over        = false;
   alreadyUsed = new Set();
   runSaved    = false;
+
   revealed = {
     name:      to8Dash(card.name),
     manacost:  to8Dash(card.manacost),
@@ -315,6 +246,7 @@ function startCard(c) {
     toughness: to8Dash(card.toughness),
     ruletext:  to8Dash(card.ruletext),
   };
+
   lastChance                 = false;
   scryfallLink.style.display = 'none';
   scryfallLink.href          = card.url;
@@ -373,15 +305,12 @@ function updateUI() {
   seedEl.textContent  = 'Seed: ' + card.id;
 }
 
-// ── Canvas rendering ──────────────────────────────────────────────────────────
-
-// Small space between letters; wider gap between words.
 function withSpacing(chars) {
   let out = '';
   for (let i = 0; i < chars.length; i++) {
     out += chars[i];
     if (chars[i] === ' ' && i < chars.length - 1) {
-      out += '  '; // word gap: space + thin space, wider than letter gap
+      out += '  ';
     } else if (chars[i] !== '' && i < chars.length - 1) {
       out += ' ';
     }
@@ -399,7 +328,6 @@ function drawCard() {
   const pw = canvas.width, ph = canvas.height;
   ctx.clearRect(0, 0, pw, ph);
 
-  // Scale image to fit panel, preserving aspect ratio
   const aspect = img.naturalWidth / img.naturalHeight;
   let iw, ih;
   if (pw / ph > aspect) { ih = ph; iw = ih * aspect; }
@@ -420,26 +348,21 @@ function drawCard() {
 
   ctx.fillStyle = '#000';
 
-  // Name — left-aligned on name bar
   ctx.font = nameF;
   ctx.fillText(withSpacing(revealed.name), tl, iy + ih * co.nameY);
 
-  // Mana cost — right-aligned on name bar
   ctx.font = bodyF;
   const mana = withSpacing(revealed.manacost);
   ctx.fillText(mana, tr - ctx.measureText(mana).width, iy + ih * co.nameY);
 
-  // Type line
   ctx.fillText(withSpacing(revealed.type), tl, iy + ih * co.typeY);
 
-  // Oracle text (word-wrapped)
   ctx.font = oraF;
   drawWrapped(
     withSpacing(revealed.ruletext),
     tl, iy + ih * co.oraY, tw, iy + ih * co.oraBotY, parsePx(oraF)
   );
 
-  // Power / Toughness (creature only)
   if (card.isCreature) {
     ctx.font = nameF;
     const pt   = withSpacing(revealed.power) + '/' + withSpacing(revealed.toughness);
@@ -470,8 +393,6 @@ function drawWrapped(text, x, y, maxW, botY, fontSize) {
   }
 }
 
-// ── Event listeners ───────────────────────────────────────────────────────────
-
 letterInput.addEventListener('input', e => {
   const ch = (e.data ?? letterInput.value).slice(-1).toLowerCase();
   if (/^[a-z0-9]$/.test(ch)) revealLetter(ch);
@@ -497,8 +418,6 @@ guessBtn.addEventListener('click', () => {
 confirmBtn.addEventListener('click', submitGuess);
 guessInput.addEventListener('keydown', e => { if (e.key === 'Enter') submitGuess(); });
 closeModal.addEventListener('click', closeGuessModal);
-
-// Close modal on backdrop click
 guessModal.addEventListener('click', e => {
   if (e.target === guessModal) closeGuessModal();
 });
@@ -514,7 +433,7 @@ function submitGuess() {
 
   if (lastChance) {
     lastChance = false;
-    endGame(correct, correct); // reveal only if correct
+    endGame(correct);
   } else {
     endGame(correct);
   }
@@ -554,8 +473,6 @@ showAnsBtn.addEventListener('click', () => {
   endGame(false);
 });
 
-// ── Init ──────────────────────────────────────────────────────────────────────
-
 async function init() {
   playerNameInput.value = playerName;
   updatePlayerStatus();
@@ -573,14 +490,17 @@ async function init() {
     const c = await loadRandom();
     pendingCard = c;
     cardReady   = true;
-    if (imagesReady === 2) {
-      startCard(c);
-      loadingOverlay.classList.add('hidden');
-    }
+    console.log('game: card data loaded', !!pendingCard, cardReady, imagesReady);
+    maybeStartCard();
   } catch (err) {
     document.querySelector('#loadingBox p').textContent = 'Failed to load card data. ' + err.message;
     console.error(err);
+    loadingOverlay.classList.add('hidden');
   }
 }
 
-init();
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else {
+  init();
+}
